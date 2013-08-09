@@ -32,23 +32,8 @@ public class GeoFenceBenchmark extends BaseBenchmark {
 
     public void iterate() throws Exception {
 
-
-        // pick a random device, get it's new position
-
-        
-        // get
-
-        /*
-          client.callProcedure(new BenchmarkCallback("InfoReq2"),
-          "InfoReq2",
-          i.dep_dt_from,
-          i.dep_dt_to,
-          i.dep_station_id,
-          i.arr_dt_from,
-          i.arr_dt_to,
-          i.arr_station_id,
-          i.train_number);
-        */
+        // pick a random device, with new position
+        sim.randomMovement(client);
 
     }
 
@@ -59,6 +44,7 @@ public class GeoFenceBenchmark extends BaseBenchmark {
         System.out.println(HORIZONTAL_RULE);
 
         BenchmarkCallback.printProcedureResults("DEVICES.insert");
+        BenchmarkCallback.printProcedureResults("AddLocation");
 
         super.printResults();
     }

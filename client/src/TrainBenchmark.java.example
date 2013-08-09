@@ -1,0 +1,249 @@
+package client;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.*;
+import org.voltdb.*;
+import org.voltdb.client.*;
+
+public class TrainBenchmark extends BaseBenchmark {
+
+    private Random rand = new Random();
+    private String filename = null;
+    private String req_type = null;
+    private long partVal = 0;
+
+    //info requests 1 and 3
+    public class Input {
+        public String req_type;
+        public String dep_dt_from;
+        public String dep_dt_to;
+        public String arr_dt_from;
+        public String arr_dt_to;		
+        public long dep_station_id;
+        public long arr_station_id;		
+        public String train_number;
+
+        public Input(String line) throws Exception {
+            String[] fields = line.split("#",8);
+            req_type = fields[0];
+            dep_dt_from = fields[1];
+            dep_dt_to = fields[2];
+            arr_dt_from = fields[3];
+            arr_dt_to = fields[4];
+            dep_station_id = Long.parseLong(fields[5]);
+            arr_station_id = Long.parseLong(fields[6]);
+            train_number = fields[7];
+        }
+    }
+    /*
+      public class Input {
+      public String arr_dt_from;
+      public String arr_dt_to;
+      public long arr_station_id;
+      public String dep_dt_from;
+      public String dep_dt_to;
+      public long dep_station_id;
+      public String train_number;
+
+      public Input(String line) throws Exception {
+      String[] fields = line.split("#",7);
+      dep_dt_from = fields[0];
+      dep_dt_to = fields[1];
+      dep_station_id = Long.parseLong(fields[2]);
+      arr_dt_from = fields[3];
+      arr_dt_to = fields[4];
+      arr_station_id = Long.parseLong(fields[5]);
+      train_number = fields[6];
+      }
+      }
+    */	
+    //change req 1
+    public class Input3 {
+        public String req_type;
+        public long pos;
+        public long pos1;
+        public String train_id;
+        public String ticket_data;
+
+        public Input3(String line) throws Exception {
+            String[] fields = line.split("#",5);
+            req_type = fields[0];
+            pos = Long.parseLong(fields[1]);
+            pos1 = Long.parseLong(fields[2]);
+            train_id = fields[3];
+            ticket_data = fields[4];
+        }
+    }	
+	
+
+    private ArrayList<Input> inputs = new ArrayList<Input>();
+    private ArrayList<Input3> inputs3 = new ArrayList<Input3>();
+
+    class GetTrainCallback implements ProcedureCallback {
+        @Override
+        public void clientCallback(ClientResponse response) throws Exception {
+            BenchmarkCallback.count("GetTrain","call");
+            if (response.getStatus() == ClientResponse.SUCCESS) {
+                BenchmarkCallback.count("GetTrain","commit");
+
+                VoltTable[] results = response.getResults();
+                VoltTable r = results[0];
+                r.advanceRow();
+                
+                client.callProcedure(new BenchmarkCallback("GetFreeSeatsCountMaskByTrain"),
+                                     "GetFreeSeatsCountMaskByTrain",
+                                     r.getString(0), //train_id
+                                     r.getLong(1),   // station_from
+                                     r.getLong(2));  // station_to
+
+            }
+            else {
+                BenchmarkCallback.count("GetTrain","rollback");
+            }
+        }
+    }
+
+
+
+    // constructor
+    public TrainBenchmark(BenchmarkConfig config) {
+        super(config);
+        
+        // set any instance attributes here
+        filename = config.filename;
+        req_type = config.request;
+    }
+
+    public void initialize() throws Exception {
+
+        // load test queries into memory
+	int counter = 0;
+	String line = null;
+	try {
+	    BufferedReader reader = new BufferedReader(new FileReader(filename));
+            System.out.println("reading from file: " + filename);
+
+	    while ((line = reader.readLine()) != null) {
+                counter++;
+                if (req_type.charAt(0) == '1' || req_type.charAt(0) == '2' ) {
+                    inputs.add(new Input(line));
+                } else {
+                    inputs3.add(new Input3(line));
+                }
+		if (counter % 10000 == 0)
+		    System.out.println("  read " + counter + " lines");
+	    }
+	    reader.close();
+            System.out.println("loaded " + Integer.toString(counter) + " records from " + filename);
+
+	} catch (Exception e) {
+	    System.err.println("Exception in loadFlatFile on reading line " + counter + " of " + filename);
+	    throw new Exception(e);
+	}
+
+    }
+
+    public void iterate() throws Exception {
+
+        partVal++;
+
+        if (req_type.charAt(0) == '1' || req_type.charAt(0) == '2' ) {
+            // pick a random query
+            Input i = inputs.get(rand.nextInt(inputs.size()));
+            // call the query procedure
+            if( req_type.charAt(0) == '1' ) {
+                String procName = "GetRoutes";
+                if (config.alttest)
+                    procName = "GetRoutes2";
+                client.callProcedure(new BenchmarkCallback(procName),
+                                     procName,
+                                     i.dep_dt_from,
+                                     i.dep_dt_to,
+                                     i.arr_dt_from,
+                                     i.arr_dt_to,
+                                     i.dep_station_id,									 
+                                     i.arr_station_id,
+                                     i.train_number,
+                                     partVal);
+            } else {
+                client.callProcedure(new GetTrainCallback(),
+                                     "GetTrain",
+                                     i.dep_dt_from,
+                                     i.dep_dt_to,
+                                     i.arr_dt_from,
+                                     i.arr_dt_to,
+                                     i.dep_station_id,									 
+                                     i.arr_station_id,
+                                     i.train_number,
+                                     partVal);			
+            }
+        } else {
+            // pick a random query
+            Input3 i = inputs3.get(rand.nextInt(inputs3.size()));
+            // call the query procedure
+
+            client.callProcedure(new BenchmarkCallback("ReservationTestMask"),
+                                 "ReservationTestMask",
+                                 i.pos,
+                                 i.pos1,
+                                 i.train_id,
+                                 i.ticket_data);		
+        }
+		
+        /*
+          client.callProcedure(new BenchmarkCallback("InfoReq2"),
+          "InfoReq2",
+          i.dep_dt_from,
+          i.dep_dt_to,
+          i.dep_station_id,
+          i.arr_dt_from,
+          i.arr_dt_to,
+          i.arr_station_id,
+          i.train_number);
+        */
+    }
+
+    public void iterate(int iteration) throws Exception {
+        // pick a random query
+        Input3 i = inputs3.get(iteration-1);
+        // call the query procedure
+
+        client.callProcedure(new BenchmarkCallback("ReservationTestMask"),
+                             "ReservationTestMask",
+                             i.pos,
+                             i.pos1,
+                             i.train_id,
+                             i.ticket_data);		
+    }	
+	
+    public void printResults() throws Exception {
+        
+        System.out.print("\n" + HORIZONTAL_RULE);
+        System.out.println(" Transaction Results");
+        System.out.println(HORIZONTAL_RULE);
+
+		
+        if (req_type.charAt(0) == '1' || req_type.charAt(0) == '2' ) {
+            if( req_type.charAt(0) == '1' ) {
+                String procName = "GetRoutes";
+                if (config.alttest)
+                    procName = "GetRoutes2";
+                BenchmarkCallback.printProcedureResults(procName);			
+            } else {
+                BenchmarkCallback.printProcedureResults("GetTrain");
+                BenchmarkCallback.printProcedureResults("GetFreeSeatsCountMaskByTrain");
+            }
+        } else {
+            BenchmarkCallback.printProcedureResults("ReservationTestMask");
+        }
+        super.printResults();
+    }
+    
+    public static void main(String[] args) throws Exception {
+        BenchmarkConfig config = BenchmarkConfig.getConfig("TrainBenchmark",args);
+        
+        BaseBenchmark benchmark = new TrainBenchmark(config);
+        benchmark.runBenchmark();
+    }
+}

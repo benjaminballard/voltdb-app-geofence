@@ -3,6 +3,7 @@ package client;
 import java.io.*;
 import java.util.*;
 import org.voltdb.client.*;
+import org.voltdb.types.TimestampType;
 
 public class DeviceSimulator {
     private Random rand = new Random();
@@ -100,6 +101,27 @@ public class DeviceSimulator {
         }
         System.out.println("  " + devices + " devices\n");
 
+    }
+
+    public void randomMovement(Client client) throws Exception {
+        
+        // get a random device
+        int d = rand.nextInt(devicePositions.length);
+
+        // get it's last position
+        Position p = devicePositions[d];
+
+        // move it  (should be about 0-30 miles)
+        p.latitude += rand.nextGaussian()/10;
+        p.longitude += rand.nextGaussian()/10;
+
+        // update the database (stored procedure will check for entry/exit events)
+        client.callProcedure(new BenchmarkCallback("AddLocation"),
+                             "AddLocation",
+                             d,
+                             new TimestampType(),
+                             p.latitude,
+                             p.longitude);
     }
 
 

@@ -55,3 +55,5 @@ CREATE TABLE device_event (
 PARTITION TABLE device_event ON COLUMN id;
 
 
+CREATE PROCEDURE FROM CLASS procedures.AddLocation;
+PARTITION PROCEDURE AddLocation ON TABLE devices COLUMN id PARAMETER 0;

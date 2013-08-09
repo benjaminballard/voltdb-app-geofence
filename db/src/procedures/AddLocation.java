@@ -1,15 +1,14 @@
 package procedures;
 
-
 import java.lang.Math;
 import java.lang.Double;
 import org.voltdb.*;
 import org.voltdb.types.TimestampType;
-
+import org.voltdb.client.ClientResponse;
 
 public class AddLocation extends VoltProcedure {
 
-    public double calcDistance(double latA, double longA, double latB, double longB)
+    public static double calcDistance(double latA, double longA, double latB, double longB)
     {
         double theDistance = (Math.sin(Math.toRadians(latA)) *
                               Math.sin(Math.toRadians(latB)) +
@@ -26,32 +25,58 @@ public class AddLocation extends VoltProcedure {
     public final SQLStmt newLocation = new SQLStmt(
         "INSERT INTO device_location VALUES (?,?,?,?);");
 
-    public VoltTable[] run(int id,
-                           TimestampType ts,
-                           double new_lat,
-                           double new_long
-                           ) throws VoltAbortException {
+    public final SQLStmt newEvent = new SQLStmt(
+        "INSERT INTO device_event VALUES (?,?,?,?);");
 
-        // get device record and insert new location
+
+    public final SQLStmt updateInsideFence = new SQLStmt(
+        "UPDATE devices SET inside_geofence = ? WHERE id = ?;");
+
+    public long run(int id,
+                    TimestampType ts,
+                    double newLat,
+                    double newLong
+                    ) throws VoltAbortException {
+
+        // get device record
         voltQueueSQL(getDevice,id);
-        voltQueueSQL(newLocation,id,ts,new_lat,new_long);
+        // insert new location
+        voltQueueSQL(newLocation,id,ts,newLat,newLong);
         
-        return voltExecuteSQL();
-
+        VoltTable[] a = voltExecuteSQL();
+        VoltTable t = a[0];
+        t.advanceRow();
+        int hasFence = (int)t.getLong(4);
 
         // if has_geofence, calculate distance from home
+        if (hasFence == 1) {
+            double homeLat = t.getDouble(2);
+            double homeLong = t.getDouble(3);
+            double radius = t.getDouble(5);
+            int inside = (int)t.getLong(6);
+            double dist = calcDistance(homeLat,homeLong,
+                                       newLat,newLong);
 
-        // if inside_geofence and distance from home > fence_radius, generate exit event, update device
+            // if previously inside fence, and now beyond radius
+            if (inside == 1 && dist > radius) {
+                // exit event
+                voltQueueSQL(newEvent,id,ts,1,0);
+                // update inside_geofence = 0
+                voltQueueSQL(updateInsideFence,0,id);
+                voltExecuteSQL(true);
+            }
 
-        // if not inside_geofence and distance from home < fence_radius, generate entry event, update device
+            // if previously outside fence, and now within radius
+            if (inside == 0 && dist < radius) {
+                // entry event
+                voltQueueSQL(newEvent,id,ts,0,1);
+                // update inside_geofence = 1
+                voltQueueSQL(updateInsideFence,1,id);
+                voltExecuteSQL(true);
+            }
+                                     
+        }
 
-
-        // calculate new location fence status
-
-        // optionally insert a new geofence event
-
-        // insert new location with fence_status
-
-
+        return ClientResponse.SUCCESS;
     }
 }
