@@ -35,6 +35,7 @@ function server() {
 }
 
 function startdb() {
+    compile
     nohup voltdb create catalog ${CATALOG_NAME}.jar \
         license $VOLTDB_HOME/voltdb/license.xml host localhost > /dev/null 2>&1 &
 }
@@ -43,16 +44,9 @@ function stopdb() {
     voltadmin shutdown
 }
 
-# run the client that drives the example
-function client() {
-    java -classpath obj:$CLASSPATH:obj -Dlog4j.configuration=file://$LOG4J \
-	DelimitedFileLoader \
-        --filename=data/towns.txt \
-        --procedure=TOWNS.insert
-}
 
 function help() {
-    echo "Usage: ./run.sh {clean|client|help|srccompile}"
+    echo "Usage: ./run.sh {clean|compile|server|startdb|stopdb|help}"
 }
 
 # Run the target passed as the first arg on the command line

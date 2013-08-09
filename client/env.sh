@@ -20,12 +20,6 @@ else
     fi
 fi
 
-#VOLTDB_HOME="/usr/share/voltdb"
-#export VOLTDB_HOME
-
-#VOLTDB_HEAPMAX='8192'; export VOLTDB_HEAPMAX
-#VOLTDB_HEAPSIZE='8192'; export VOLTDB_HEAPSIZE
-
 if [ -d "$VOLTDB_HOME/lib/voltdb" ]; then
     # Debian paths
     export CLASSPATH="`ls -1 $VOLTDB_HOME/lib/voltdb/voltdb-*.jar $VOLTDB_HOME/lib/*.jar | tr '\n' ':'`"

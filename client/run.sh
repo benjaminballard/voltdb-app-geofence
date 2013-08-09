@@ -10,9 +10,9 @@ function clean() {
 }
 
 # compile the source code for procedures and the client
-function srccompile() {
+function compile() {
     mkdir -p obj
-    javac -classpath $CLASSPATH -d obj -Xlint:deprecation \
+    javac -classpath $CLASSPATH -d obj \
         src/*.java
     # stop if compilation fails
     if [ $? != 0 ]; then exit; fi
@@ -20,7 +20,7 @@ function srccompile() {
 
 # run the client that drives the example
 function client() {
-    srccompile
+    compile
     java -classpath obj:$CLASSPATH -Dlog4j.configuration=file://$LOG4J \
         client.GeoFenceBenchmark \
         --displayinterval=5 \
@@ -31,14 +31,8 @@ function client() {
         --ratelimit=100000
 }
 
-function testsim() {
-    java -classpath obj:$CLASSPATH -Dlog4j.configuration=file://$LOG4J \
-        client.DeviceSimulator data/Gaz_zcta_national.txt
-
-}
-
 function help() {
-    echo "Usage: ./run.sh {clean|client|help|srccompile}"
+    echo "Usage: ./run.sh {clean|compile|client|help}"
 }
 
 # Run the target passed as the first arg on the command line
