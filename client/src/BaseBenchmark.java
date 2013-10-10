@@ -88,7 +88,7 @@ public abstract class BaseBenchmark {
         this.config = config;
 
         ClientConfig clientConfig = new ClientConfig(config.user, config.password, new StatusListener());
-        clientConfig.setHeavyweight(true);
+        clientConfig.setHeavyweight(false);
         if (config.autotune) {
             clientConfig.enableAutoTune();
             clientConfig.setAutoTuneTargetInternalLatency(config.latencytarget);

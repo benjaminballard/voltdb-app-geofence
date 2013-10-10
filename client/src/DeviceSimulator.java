@@ -13,15 +13,10 @@ public class DeviceSimulator {
         public double longitude;
     }
     private Map<String,Position> zipcodePositions = new HashMap<String,Position>();
-    //private Map<Long,Position> devicePositions = new HashMap<Long,Position>();
     private String[] zipcodes;
     private Position[] devicePositions;
 
     private int[] radii = {25,50,100,250};
-    
-    //private double[][] zipcodePositions;
-    //private double[][] devicePositions;
-
 
     //constructor
     public DeviceSimulator() {
@@ -116,8 +111,8 @@ public class DeviceSimulator {
         p.longitude += rand.nextGaussian()/10;
 
         // update the database (stored procedure will check for entry/exit events)
-        client.callProcedure(new BenchmarkCallback("AddLocation"),
-                             "AddLocation",
+        client.callProcedure(new BenchmarkCallback("PositionUpdate"),
+                             "PositionUpdate",
                              d,
                              new TimestampType(),
                              p.latitude,

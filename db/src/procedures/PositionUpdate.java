@@ -6,7 +6,7 @@ import org.voltdb.*;
 import org.voltdb.types.TimestampType;
 import org.voltdb.client.ClientResponse;
 
-public class AddLocation extends VoltProcedure {
+public class PositionUpdate extends VoltProcedure {
 
     public static double calcDistance(double latA, double longA, double latB, double longB)
     {
@@ -22,7 +22,7 @@ public class AddLocation extends VoltProcedure {
     public final SQLStmt getDevice = new SQLStmt(
         "SELECT * FROM devices WHERE id = ?;");
 
-    public final SQLStmt newLocation = new SQLStmt(
+    public final SQLStmt newPosition = new SQLStmt(
         "INSERT INTO device_location VALUES (?,?,?,?);");
 
     public final SQLStmt newEvent = new SQLStmt(
@@ -41,7 +41,7 @@ public class AddLocation extends VoltProcedure {
         // get device record
         voltQueueSQL(getDevice,id);
         // insert new location
-        voltQueueSQL(newLocation,id,ts,newLat,newLong);
+        voltQueueSQL(newPosition,id,ts,newLat,newLong);
         
         VoltTable[] a = voltExecuteSQL();
         VoltTable t = a[0];

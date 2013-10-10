@@ -7,8 +7,6 @@ import org.voltdb.client.*;
 
 public class GeoFenceBenchmark extends BaseBenchmark {
 
-    //private Random rand = new Random();
-    //private String zipcodeFilename = null;
     private DeviceSimulator sim = new DeviceSimulator();
     private int deviceCount = 0;
 
@@ -44,7 +42,7 @@ public class GeoFenceBenchmark extends BaseBenchmark {
         System.out.println(HORIZONTAL_RULE);
 
         BenchmarkCallback.printProcedureResults("DEVICES.insert");
-        BenchmarkCallback.printProcedureResults("AddLocation");
+        BenchmarkCallback.printProcedureResults("PositionUpdate");
 
         super.printResults();
     }
