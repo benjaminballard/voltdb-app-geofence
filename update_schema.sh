@@ -28,10 +28,6 @@ if [ -f ddl.sql ]; then
     if [ $? != 0 ]; then exit; fi
 fi
 
-# start database in background
+# live update of schema
 voltadmin update ${CATALOG_NAME}.jar deployment.xml
 
-echo "VoltDB is running!"
-echo
-echo "to stop use the command:"
-echo "  voltadmin shutdown"
